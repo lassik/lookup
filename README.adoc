@@ -1,0 +1,19 @@
+= lookup
+
+Lookup facts quickly from the command line. Databases are simple text
+files in `~/.lookup`, it's easy to make your own.
+
+== Examples
+
+    $ lookup color red green blue
+    Red == #FF0000
+    Green == #008000
+    Blue == #0000FF
+
+    $ lookup domain .me .us
+    .me == Montenegro
+    .us == United States of America
+
+    $ lookup airport lhr jfk
+    LHR == London, England [Heathrow Airport], United Kingdom
+    JFK == New York, NY [John F. Kennedy International Airport], USA
