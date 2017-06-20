@@ -73,11 +73,15 @@ func tryIn(pathDir, kind, key string) bool {
 		}
 		awaitHeader = false
 		fields := strings.Split(line, "==")
+		lineMatches := false
 		for _, field := range fields {
 			if strings.ToLower(strings.TrimSpace(field)) == lowKey {
-				found = true
-				fmt.Println(line)
+				lineMatches = true
 			}
+		}
+		if lineMatches {
+			fmt.Println(line)
+			found = true
 		}
 	}
 
