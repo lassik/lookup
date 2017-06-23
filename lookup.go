@@ -1,10 +1,9 @@
 package main
 
 import (
-	"bufio"
+	"encoding/csv"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -15,6 +14,8 @@ import (
 )
 
 const systemPath = "/usr/local/share/lookup"
+
+const csvExt = ".csv"
 
 // To enable completions in Bash: eval $(lookup complete)
 //
@@ -48,44 +49,27 @@ func getPath() []string {
 
 func tryIn(pathDir, kind, key string) bool {
 	lowKey := strings.ToLower(key)
-	fullPath := path.Join(pathDir, kind)
+	fullPath := path.Join(pathDir, kind+csvExt)
 	file, err := os.Open(fullPath)
 	if err != nil {
 		return false
 	}
 	defer file.Close()
-	//fmt.Printf("Opened %s\n", fullPath)
-	reader := bufio.NewReader(file)
-	var line string
 	found := false
-	awaitHeader := true
-	for {
-		line, err = reader.ReadString('\n')
-		if err != nil {
-			break
-		}
-		line := strings.TrimSpace(line)
-		if awaitHeader {
-			if line != "lookup v1" {
-				fmt.Printf("Unknown file format for %s\n", kind)
-				return false
-			}
-		}
-		awaitHeader = false
-		fields := strings.Split(line, "==")
-		lineMatches := false
-		for _, field := range fields {
+	reader := csv.NewReader(file)
+	for record, err := reader.Read(); err == nil; record, err = reader.Read() {
+		recordMatches := false
+		for _, field := range record {
 			if strings.ToLower(strings.TrimSpace(field)) == lowKey {
-				lineMatches = true
+				recordMatches = true
 			}
 		}
-		if lineMatches {
-			fmt.Println(line)
+		if recordMatches {
+			fmt.Println(record)
 			found = true
 		}
 	}
-
-	if err != io.EOF {
+	if err != nil {
 		fmt.Printf(" > Failed!: %v\n", err)
 	}
 	return found
@@ -114,7 +98,11 @@ func listCompletions(i int, args []string) {
 	for _, pathDir := range getPath() {
 		fileInfos, _ := ioutil.ReadDir(pathDir)
 		for _, fileInfo := range fileInfos {
-			allNames = append(allNames, fileInfo.Name())
+			name := fileInfo.Name()
+			if strings.HasSuffix(name, csvExt) {
+				nameStem := name[:len(name)-len(csvExt)]
+				allNames = append(allNames, nameStem)
+			}
 		}
 	}
 	for _, name := range allNames {
