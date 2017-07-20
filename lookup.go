@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -27,6 +28,16 @@ func check(e error) {
 	}
 }
 
+func maxStringLen(strings []string) int {
+	maxlen := 0
+	for _, s := range strings {
+		if maxlen < len(s) {
+			maxlen = len(s)
+		}
+	}
+	return maxlen
+}
+
 func getHome() string {
 	usr, err := user.Current()
 	if err != nil {
@@ -47,7 +58,7 @@ func getPath() []string {
 	return getDefaultPath()
 }
 
-func tryIn(pathDir, kind, key string) bool {
+func tryIn(pathDir, kind, key string, anyKeyFound bool) bool {
 	lowKey := strings.ToLower(key)
 	fullPath := path.Join(pathDir, kind+csvExt)
 	file, err := os.Open(fullPath)
@@ -57,7 +68,22 @@ func tryIn(pathDir, kind, key string) bool {
 	defer file.Close()
 	found := false
 	reader := csv.NewReader(file)
-	for record, err := reader.Read(); err == nil; record, err = reader.Read() {
+	fieldTitles := []string{}
+	maxTitleLen := 0
+	for {
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %s %v\n", fullPath, err)
+			break
+		}
+		if len(fieldTitles) == 0 {
+			fieldTitles = record
+			maxTitleLen = maxStringLen(fieldTitles)
+			continue
+		}
 		recordMatches := false
 		for _, field := range record {
 			if strings.ToLower(strings.TrimSpace(field)) == lowKey {
@@ -65,27 +91,45 @@ func tryIn(pathDir, kind, key string) bool {
 			}
 		}
 		if recordMatches {
-			fmt.Println(record)
+			if anyKeyFound {
+				fmt.Println()
+			}
+			for i := 0; i < len(fieldTitles); i++ {
+				title := fieldTitles[i]
+				field := record[i]
+				gap := maxTitleLen - len(title)
+				fmt.Println(title + ":" +
+					strings.Repeat(" ", gap) + " " +
+					field)
+			}
 			found = true
+			anyKeyFound = true
 		}
-	}
-	if err != nil {
-		fmt.Printf(" > Failed!: %v\n", err)
 	}
 	return found
 }
 
 func lookup(kind string, keys []string) {
+	anyKeyFound := false
+	missing := []string{}
 	for _, key := range keys {
 		keyFound := false
 		for _, pathDir := range getPath() {
-			keyFound = tryIn(pathDir, kind, key)
-			if keyFound {
-				break
+			if tryIn(pathDir, kind, key, anyKeyFound) {
+				keyFound = true
+				anyKeyFound = true
 			}
 		}
 		if !keyFound {
-			fmt.Printf("Cannot find %s\n", key)
+			missing = append(missing, key)
+		}
+	}
+	if len(missing) > 0 {
+		if anyKeyFound {
+			fmt.Println()
+		}
+		for _, key := range missing {
+			fmt.Printf("Not found: %s\n", key)
 		}
 	}
 }
