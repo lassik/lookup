@@ -59,7 +59,10 @@ func getPath() []string {
 }
 
 func tryIn(pathDir, kind, key string, anyKeyFound bool) bool {
-	lowKey := strings.ToLower(key)
+	// Add spaces around both the needle and the haystack so that
+	// we can match individual words (but not parts of words) as
+	// well as multi-word sequences.
+	lowKey := " " + strings.ToLower(key) + " "
 	fullPath := path.Join(pathDir, kind+csvExt)
 	file, err := os.Open(fullPath)
 	if err != nil {
@@ -86,7 +89,8 @@ func tryIn(pathDir, kind, key string, anyKeyFound bool) bool {
 		}
 		recordMatches := false
 		for _, field := range record {
-			if strings.ToLower(strings.TrimSpace(field)) == lowKey {
+			lowField := strings.ToLower(" " + field + " ")
+			if strings.Contains(lowField, lowKey) {
 				recordMatches = true
 			}
 		}
