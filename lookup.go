@@ -17,9 +17,9 @@ import (
 
 const csvExt = ".csv"
 
-// To enable completions in Bash: eval $(lookup complete)
+// To enable completions in Bash: eval $(lookup complete script bash)
 //
-const completeScriptForBash = `_lookup_complete() { IFS=$'\n' COMPREPLY=($(compgen -W "$(lookup complete "$COMP_CWORD" "${COMP_WORDS[@]}")" -- "${COMP_WORDS[COMP_CWORD]}")); }; complete -o nospace -F _lookup_complete lookup`
+const completeScriptBash = `_lookup_complete() { IFS=$'\n' COMPREPLY=($(compgen -W "$(lookup complete arg "$COMP_CWORD" "${COMP_WORDS[@]}")" -- "${COMP_WORDS[COMP_CWORD]}")); }; complete -o nospace -F _lookup_complete lookup`
 
 func check(e error) {
 	if e != nil {
@@ -187,33 +187,71 @@ func lookup(kind string, keys []string) {
 	}
 }
 
-func listCompletions(i int, args []string) {
-	if i != 1 {
-		return
+func usage() {
+	log.Fatal("usage: lookup table item [item ...]")
+}
+
+func compUsage() {
+	log.Print("usage: lookup complete script bash")
+	log.Fatal("usage: lookup complete arg [arg-index] arg1 [arg2 ... argn]")
+}
+
+func complete(args []string) {
+	if len(args) < 1 {
+		compUsage()
 	}
-	kinds := []string{}
-	for kind, _ := range getAllTables() {
-		kinds = append(kinds, kind)
-	}
-	sort.Strings(kinds)
-	for _, kind := range kinds {
-		fmt.Printf("%s \n", kind)
+	switch args[0] {
+	case "script":
+		if len(args) != 2 {
+			compUsage()
+		}
+		switch args[1] {
+		case "bash":
+			fmt.Println(completeScriptBash)
+		default:
+			compUsage()
+		}
+	case "arg":
+		if len(args) < 2 {
+			compUsage()
+		}
+		argi, err := strconv.Atoi(args[1])
+		if err != nil {
+			log.Fatal(err)
+		}
+		args = append([]string{""}, args[2:]...)
+		if argi < 1 {
+			log.Fatal("arg index too low")
+		}
+		if argi == len(args) {
+			args = append(args, "")
+		}
+		if argi >= len(args) {
+			log.Fatal("arg index too high")
+		}
+		comps := []string{}
+		if argi == 1 {
+			for kind, _ := range getAllTables() {
+				comps = append(comps, kind)
+			}
+		}
+		sort.Strings(comps)
+		for _, comp := range comps {
+			fmt.Printf("%s \n", comp)
+		}
+	default:
+		compUsage()
 	}
 }
 
 func main() {
 	flag.Parse()
-	if flag.Args()[0] == "complete" {
-		if len(flag.Args()) == 1 {
-			fmt.Println(completeScriptForBash)
-			return
-		}
-		i, err := strconv.Atoi(flag.Args()[1])
-		if err != nil {
-			panic(err)
-		}
-		listCompletions(i, flag.Args()[2:])
-		return
+	args := flag.Args()
+	if len(args) == 0 {
+		usage()
+	} else if args[0] == "complete" {
+		complete(args[1:])
+	} else {
+		lookup(args[0], args[1:])
 	}
-	lookup(flag.Args()[0], flag.Args()[1:])
 }
