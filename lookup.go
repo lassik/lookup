@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/user"
 	"path"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -194,6 +195,7 @@ func listCompletions(i int, args []string) {
 	for kind, _ := range getAllTables() {
 		kinds = append(kinds, kind)
 	}
+	sort.Strings(kinds)
 	for _, kind := range kinds {
 		fmt.Printf("%s \n", kind)
 	}
