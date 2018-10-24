@@ -60,13 +60,55 @@ func getPath() []string {
 	return getDefaultPath()
 }
 
-func tryIn(pathDir, kind, key string, anyKeyFound bool) bool {
+func getAllTablesInDir(tables map[string][]string, dir string) {
+	infos, err := ioutil.ReadDir(dir)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			log.Println(err)
+		}
+		return
+	}
+	for _, info := range infos {
+		name := info.Name()
+		if strings.HasPrefix(name, ".") {
+			continue
+		}
+		fullPath := path.Join(dir, name)
+		if info.Mode()&os.ModeSymlink != 0 {
+			info, err = os.Stat(fullPath)
+			if err != nil {
+				continue
+			}
+		}
+		if info.Mode().IsRegular() {
+			lowName := strings.ToLower(name)
+			if strings.HasSuffix(lowName, csvExt) {
+				lowStem := lowName[:len(lowName)-len(csvExt)]
+				list := tables[lowStem]
+				list = append(list, fullPath)
+				tables[lowStem] = list
+			}
+		} else if info.Mode().IsDir() {
+			getAllTablesInDir(tables, fullPath)
+		}
+	}
+}
+
+func getAllTables() map[string][]string {
+	tables := map[string][]string{}
+	for _, dir := range getPath() {
+		// TODO: Assert abs path?
+		getAllTablesInDir(tables, dir)
+	}
+	return tables
+}
+
+func tryIn(csvFile, key string, anyKeyFound bool) bool {
 	// Add spaces around both the needle and the haystack so that
 	// we can match individual words (but not parts of words) as
 	// well as multi-word sequences.
 	lowKey := " " + strings.ToLower(key) + " "
-	fullPath := path.Join(pathDir, kind+csvExt)
-	file, err := os.Open(fullPath)
+	file, err := os.Open(csvFile)
 	if err != nil {
 		return false
 	}
@@ -81,7 +123,7 @@ func tryIn(pathDir, kind, key string, anyKeyFound bool) bool {
 			break
 		}
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: %s %v\n", fullPath, err)
+			fmt.Fprintf(os.Stderr, "error: %s %v\n", csvFile, err)
 			break
 		}
 		if len(fieldTitles) == 0 {
@@ -116,12 +158,16 @@ func tryIn(pathDir, kind, key string, anyKeyFound bool) bool {
 }
 
 func lookup(kind string, keys []string) {
+	csvFiles := getAllTables()[kind]
+	if len(csvFiles) == 0 {
+		fmt.Printf("No such lookup table: %s\n", kind)
+	}
 	anyKeyFound := false
 	missing := []string{}
 	for _, key := range keys {
 		keyFound := false
-		for _, pathDir := range getPath() {
-			if tryIn(pathDir, kind, key, anyKeyFound) {
+		for _, csvFile := range csvFiles {
+			if tryIn(csvFile, key, anyKeyFound) {
 				keyFound = true
 				anyKeyFound = true
 			}
@@ -144,19 +190,12 @@ func listCompletions(i int, args []string) {
 	if i != 1 {
 		return
 	}
-	var allNames []string
-	for _, pathDir := range getPath() {
-		fileInfos, _ := ioutil.ReadDir(pathDir)
-		for _, fileInfo := range fileInfos {
-			name := fileInfo.Name()
-			if strings.HasSuffix(name, csvExt) {
-				nameStem := name[:len(name)-len(csvExt)]
-				allNames = append(allNames, nameStem)
-			}
-		}
+	kinds := []string{}
+	for kind, _ := range getAllTables() {
+		kinds = append(kinds, kind)
 	}
-	for _, name := range allNames {
-		fmt.Printf("%s \n", name)
+	for _, kind := range kinds {
+		fmt.Printf("%s \n", kind)
 	}
 }
 
