@@ -21,12 +21,6 @@ const csvExt = ".csv"
 //
 const completeScriptBash = `_lookup_complete() { IFS=$'\n' COMPREPLY=($(compgen -W "$(lookup complete arg "$COMP_CWORD" "${COMP_WORDS[@]}")" -- "${COMP_WORDS[COMP_CWORD]}")); }; complete -o nospace -F _lookup_complete lookup`
 
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
-
 func maxStringLen(strings []string) int {
 	maxlen := 0
 	for _, s := range strings {
@@ -37,10 +31,6 @@ func maxStringLen(strings []string) int {
 	return maxlen
 }
 
-func getSystemPath() string {
-	return "/usr/local/share/lookup"
-}
-
 func getHome() string {
 	usr, err := user.Current()
 	if err != nil {
@@ -49,11 +39,12 @@ func getHome() string {
 	return usr.HomeDir
 }
 
+func getSystemPath() string {
+	return "/usr/local/share/lookup"
+}
+
 func getDefaultPath() []string {
-	var ans []string
-	ans = append(ans, path.Join(getHome(), ".lookup"))
-	ans = append(ans, getSystemPath())
-	return ans
+	return []string{path.Join(getHome(), ".lookup"), getSystemPath()}
 }
 
 func getPath() []string {
@@ -104,7 +95,7 @@ func getAllTables() map[string][]string {
 	return tables
 }
 
-func tryIn(csvFile, key string, anyKeyFound bool) bool {
+func lookupKeyInFile(key, csvFile string, anyKeyFound bool) bool {
 	// Add spaces around both the needle and the haystack so that
 	// we can match individual words (but not parts of words) as
 	// well as multi-word sequences.
@@ -168,7 +159,7 @@ func lookup(kind string, keys []string) {
 	for _, key := range keys {
 		keyFound := false
 		for _, csvFile := range csvFiles {
-			if tryIn(csvFile, key, anyKeyFound) {
+			if lookupKeyInFile(key, csvFile, anyKeyFound) {
 				keyFound = true
 				anyKeyFound = true
 			}
