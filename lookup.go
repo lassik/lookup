@@ -14,8 +14,6 @@ import (
 	"strings"
 )
 
-const systemPath = "/usr/local/share/lookup"
-
 const csvExt = ".csv"
 
 // To enable completions in Bash: eval $(lookup complete)
@@ -38,6 +36,10 @@ func maxStringLen(strings []string) int {
 	return maxlen
 }
 
+func getSystemPath() string {
+	return "/usr/local/share/lookup"
+}
+
 func getHome() string {
 	usr, err := user.Current()
 	if err != nil {
@@ -49,7 +51,7 @@ func getHome() string {
 func getDefaultPath() []string {
 	var ans []string
 	ans = append(ans, path.Join(getHome(), ".lookup"))
-	ans = append(ans, systemPath)
+	ans = append(ans, getSystemPath())
 	return ans
 }
 
