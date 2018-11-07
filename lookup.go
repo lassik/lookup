@@ -52,7 +52,7 @@ func getPath() []string {
 	return getDefaultPath()
 }
 
-func getAllTablesInDir(tables map[string][]string, dir string) {
+func getAllTablesInDir(tables map[string][]string, dir string, depth int) {
 	infos, err := ioutil.ReadDir(dir)
 	if err != nil {
 		if !os.IsNotExist(err) {
@@ -80,8 +80,8 @@ func getAllTablesInDir(tables map[string][]string, dir string) {
 				list = append(list, fullPath)
 				tables[lowStem] = list
 			}
-		} else if info.Mode().IsDir() {
-			getAllTablesInDir(tables, fullPath)
+		} else if info.Mode().IsDir() && depth < 5 {
+			getAllTablesInDir(tables, fullPath, depth + 1)
 		}
 	}
 }
@@ -90,7 +90,7 @@ func getAllTables() map[string][]string {
 	tables := map[string][]string{}
 	for _, dir := range getPath() {
 		// TODO: Assert abs path?
-		getAllTablesInDir(tables, dir)
+		getAllTablesInDir(tables, dir, 1)
 	}
 	return tables
 }
