@@ -1,3 +1,6 @@
+// Copyright 2017-2019 Lassi Kortela
+// SPDX-License-Identifier: ISC
+
 package main
 
 import (
