@@ -84,7 +84,7 @@ func getAllTablesInDir(tables map[string][]string, dir string, depth int) {
 				tables[lowStem] = list
 			}
 		} else if info.Mode().IsDir() && depth < 5 {
-			getAllTablesInDir(tables, fullPath, depth + 1)
+			getAllTablesInDir(tables, fullPath, depth+1)
 		}
 	}
 }
