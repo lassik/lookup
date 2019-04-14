@@ -1,19 +1,76 @@
 = lookup
 
-Lookup facts quickly from the command line. Databases are simple text
-files in `~/.lookup`, it's easy to make your own.
+Lookup facts quickly from the command line. Databases are just `.csv`
+(comma-separated value) files in `~/.lookup` so it's easy to make your
+own.
+
+It's also easy to share tables with friends or communities -- you can
+clone Git repositories into `~/.lookup`. Lookup ignores everything
+except `.csv` files so it's no problem to have the generator scripts
+for computer-generated tables in the same place. You can also use
+symbolic links in `~/.lookup` if you want to store tables elsewhere.
 
 == Examples
 
+=== Colors
+
+[source]
+----
     $ lookup color red green blue
-    Red == #FF0000
-    Green == #008000
-    Blue == #0000FF
+    Web:   red
+    Hex6:  #ff0000
+    R,G,B: 255,0,0
 
+    Web:   green
+    Hex6:  #008000
+    R,G,B: 0,128,0
+
+    Web:   blue
+    Hex6:  #0000ff
+    R,G,B: 0,0,255
+----
+
+=== Domain names
+
+[source]
+----
     $ lookup domain .me .us
-    .me == Montenegro
-    .us == United States of America
+    Domain:      .me
+    Description: Montenegro
 
+    Domain:      .us
+    Description: United States of America
+----
+
+=== Radio alphabet
+
+[source]
+----
+    $ lookup radio-alphabet h e l l o
+    Letter: H
+    Code:   Hotel
+
+    Letter: E
+    Code:   Echo
+
+    Letter: L
+    Code:   Lima
+
+    Letter: L
+    Code:   Lima
+
+    Letter: O
+    Code:   Oscar
+----
+
+=== Airports
+
+[source]
+----
     $ lookup airport lhr jfk
-    LHR == London, England [Heathrow Airport], United Kingdom
-    JFK == New York, NY [John F. Kennedy International Airport], USA
+    Code: LHR
+    Name: London, England [Heathrow Airport], United Kingdom
+
+    Code: JFK
+    Name: New York, NY [John F. Kennedy International Airport], USA
+----
